@@ -1,0 +1,161 @@
+while(1)
+	{
+	int t[8];//, t1,t2,h1,h2;
+	//float t1,t2,h1,h2;
+	char txtbuf[21], data[2];
+
+	if (gercone()) LCD_BLIGHT=LCD_BLIGHT_ON;
+		else LCD_BLIGHT = 0;		
+	i2c_lcd_gotoxy(0,1);
+
+
+	if((keycode!=0xff)&&(keycode!=keycode0))// это не дребезг, а впервые нажатая клавиша.
+		{
+		keycode0=keycode;
+
+
+		switch(keycode)
+			{
+			case 0x1: 
+				fan_in_slow();
+				update_r1();
+				break;
+			case 0x2: 
+				fan_in_normal();
+				update_r1();
+				break;
+			case 0x3: 
+				fan_in_fast();
+				update_r1();
+				break;
+			case 0xA: 
+				if(is_fan_in_on()) fan_in_off(); 
+					else fan_in_on();
+				update_r1();
+				break;
+			case 0x4: 
+				fan_out_slow();
+				update_r1();
+				break;
+			case 0x5: 
+				fan_out_normal();
+				update_r1();
+				break;
+			case 0x6: 
+				fan_out_fast();
+				update_r1();
+				break;
+			case 0xB: 
+				if(is_fan_out_on()) fan_out_off(); 
+					else fan_out_on();
+				update_r1();
+				break;
+			case 0xC: 
+				if(is_humidator_on()) humidator_off(); 
+					else humidator_on();
+				update_r1();
+				break;
+			case 0xD: 
+				if(is_condishen_on()) condishen_off(); 
+					else condishen_on();
+				update_rc();
+				break;
+			case 0x0: 
+				if(is_condishen_compressor_on()) condishen_compressor_off(); 
+					else condishen_compressor_on();
+				update_rc();
+				break;
+			case 0x11: 
+				if(is_condishen_compressor_hot()) condishen_compressor_cool(); 
+					else condishen_compressor_hot();
+				update_rc();
+				break;
+			case 0x7: 
+				if(is_condishen_fan_fast()) condishen_fan_slow(); 
+					else condishen_fan_fast();
+				update_rc();
+				break;
+			case 0x10: 
+				if (LCD_BLIGHT) LCD_BLIGHT=0;
+					else LCD_BLIGHT = LCD_BLIGHT_ON;
+					
+				i2c_lcd_gotoxy(0,0);
+				break;
+			}
+		}	
+	
+	
+	if(new_sec)
+		{
+		ds3231_read_time(time);
+		sprintf(txtbuf, "%u:%u:%u", time[2], !(time[2]%CIKLE), time[2]);//Не трогать! Иначе следующий IF не работает!
+		if(!(time[2]%CIKLE))// раз в 4 секунды.
+			{
+			//usart_str_rn("---------------"); 
+			//sprintf(txtbuf, "%u:%u:%u", time[0], time[1], time[2]);
+			//usart_str_rn(txtbuf);
+
+			//cli();
+			//dhtread (6, &h1, &t1); // DHT проверяем по одному, с перерывом. Иначе глючат.
+			//sei();			
+			//sprintf(txtbuf, "dht0: h %d, t %d\r\ndht1: h %d, t %d", h1, t1, h2, t2);
+			//usart_str_rn(txtbuf);
+			//t1=t2=h1=h2=5;
+			//dht_read_data(6, &t1, &h1);
+			//dht_read_data(7, &t2, &h2);
+
+\
+			TCNT0_16+=TCNT0;
+			TCNT0=0;
+			sprintf(txtbuf, "%02u:%02u", time[0], time[1]);
+			i2c_lcd_gotoxy(0,0);
+			i2c_lcd_puts(txtbuf);
+			sprintf(txtbuf, "%d", (int)i2c_speed);
+			i2c_lcd_gotoxy(0,1);
+			i2c_lcd_puts(txtbuf);
+
+			//cli();
+			//dhtread (7, &h2, &t2); // DHT проверяем по одному, с перерывом. Иначе глючат.
+			//sei();			
+//			sprintf(txtbuf, "i%03u o%03u",(int)((TCNT0_16*ANEMO_INPUT_SPEED)/CIKLE), (int)((TCNT1*ANEMO_OUTPUT_SPEED)/CIKLE));
+//			i2c_lcd_gotoxy(0,1);
+//			i2c_lcd_puts(txtbuf);
+			//usart_str_rn(txtbuf);
+
+
+			for(i=0;i<8;i++)
+				{
+				t[i]=ds1820_read_t(&ds1820addr[i][0]);
+				}
+				
+//			sprintf(txtbuf, "%02d %02d %02d %02d %02d:%04.1f", t[1]/10, t[2]/10, t[3]/10, (int)t1, (int)h1, abs_humid(h1,t1));
+			sprintf(txtbuf, "Inp: %03d %02d %02d %02d %02d", (int)((TCNT0_16*ANEMO_INPUT_SPEED)/CIKLE), t[1]/10, t[2]/10, t[3]/10, t[7]/10);
+			i2c_lcd_gotoxy(0,2);
+			i2c_lcd_puts(txtbuf);
+//			sprintf(txtbuf, "%02d %02d %02d %02d %02d:%04.1f", t[6]/10, t[5]/10, t[4]/10, (int)t2, (int)h2, abs_humid(h2,t2));
+			sprintf(txtbuf, "Out: %03d %02d %02d %02d", (int)((TCNT1*ANEMO_OUTPUT_SPEED)/CIKLE), t[6]/10, t[5]/10, t[4]/10);
+			i2c_lcd_gotoxy(0,3);
+			i2c_lcd_puts(txtbuf);
+
+			//DS18x20_ReadData(THERMO1,data);
+			//sprintf(txtbuf, "thermo_in: %d.%d C", data[1],data[2]);
+			usart_str_rn("");
+		/*	DS18x20_ReadData((char *)(&(THERMO2)),data);
+			sprintf(txtbuf, "thermo_in: %d.%d C", data[1],data[2]);
+			usart_str_rn(txtbuf);
+			DS18x20_ReadData((char *)(&(THERMO3)),data);
+			sprintf(txtbuf, "thermo_in: %d.%d C", data[1],data[2]);
+			usart_str_rn(txtbuf);
+
+
+			
+			//usart_str_rn(txtbuf);
+			DS18x20_StartMeasure((char *)&(THERMO1));*/
+			
+			TCNT1=0;
+			TCNT0_16=0;
+			}
+		new_sec=0;
+		}
+	
+	}
